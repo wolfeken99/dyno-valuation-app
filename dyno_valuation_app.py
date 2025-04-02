@@ -18,7 +18,7 @@ st.title("Dyno Valuation Model - Business Valuation")
 st.header("Inputs")
 
 # FDA Approval Date
-approval_date = st.date_input("FDA Approval Date", datetime(2025, 12, 31))
+approval_date = st.date_input("FDA Approval Date", datetime(2026, 1, 1))
 
 # Ensure the FDA approval date is in datetime format
 approval_date = pd.to_datetime(approval_date)
@@ -34,12 +34,21 @@ discount_rate_international = st.slider("Discount Rate (International Hospital)"
 discount_rate_rpm = st.slider("Discount Rate (RPM)", 0.0, 1.0, 0.2)
 
 # Hardcoded terminal NPV for each business line (these will be updated in iterations)
-npv_terminal_domestic_ebitda = 1103854795062.00
-npv_terminal_domestic_revenue = 74505280.00
-npv_terminal_international_ebitda = 857871799469.00
-npv_terminal_international_revenue = 537869567871.00
-npv_terminal_rpm_ebitda = 141333458229.00
-npv_terminal_rpm_revenue = 106762883868.00
+# Revenue projections based on the income statement you provided
+domestic_revenue_2026 = 5248050
+domestic_revenue_2027 = 20719845
+domestic_revenue_2028 = 46512630
+domestic_revenue_2029 = 94529575
+
+international_revenue_2026 = 0  # Revenue starts in 2027
+international_revenue_2027 = 14680170
+international_revenue_2028 = 64305788
+international_revenue_2029 = 140999280
+
+rpm_revenue_2026 = 0  # Revenue starts in 2027
+rpm_revenue_2027 = 689227
+rpm_revenue_2028 = 14875721
+rpm_revenue_2029 = 37987006
 
 # Calculate Present Value for each business line
 # Ensure correct handling of months-to-years conversion
@@ -47,14 +56,25 @@ years_to_revenue_domestic = (datetime.now() - approval_date).days / 365 + (domes
 years_to_revenue_international = (datetime.now() - approval_date).days / 365 + (international_lag / 12)
 years_to_revenue_rpm = (datetime.now() - approval_date).days / 365 + (rpm_lag / 12)
 
+# Using the provided revenue projections as the NPVs
+present_value_domestic_revenue = calculate_present_value(domestic_revenue_2026, discount_rate_domestic, years_to_revenue_domestic)
+present_value_international_revenue = calculate_present_value(international_revenue_2027, discount_rate_international, years_to_revenue_international)
+present_value_rpm_revenue = calculate_present_value(rpm_revenue_2027, discount_rate_rpm, years_to_revenue_rpm)
+
+# For EBITDA, we will assume the EBITDA margin remains constant at the same rates (no data provided for EBITDA, but can be adjusted as needed)
+# Example of applying the same logic to EBITDA values as we did for revenue
+ebitda_margin_domestic = 0.2  # Example margin for Domestic
+ebitda_margin_international = 0.2  # Example margin for International
+ebitda_margin_rpm = 0.2  # Example margin for RPM
+
+npv_terminal_domestic_ebitda = domestic_revenue_2026 * ebitda_margin_domestic
+npv_terminal_international_ebitda = international_revenue_2027 * ebitda_margin_international
+npv_terminal_rpm_ebitda = rpm_revenue_2027 * ebitda_margin_rpm
+
+# Present values for EBITDA
 present_value_domestic_ebitda = calculate_present_value(npv_terminal_domestic_ebitda, discount_rate_domestic, years_to_revenue_domestic)
-present_value_domestic_revenue = calculate_present_value(npv_terminal_domestic_revenue, discount_rate_domestic, years_to_revenue_domestic)
-
 present_value_international_ebitda = calculate_present_value(npv_terminal_international_ebitda, discount_rate_international, years_to_revenue_international)
-present_value_international_revenue = calculate_present_value(npv_terminal_international_revenue, discount_rate_international, years_to_revenue_international)
-
 present_value_rpm_ebitda = calculate_present_value(npv_terminal_rpm_ebitda, discount_rate_rpm, years_to_revenue_rpm)
-present_value_rpm_revenue = calculate_present_value(npv_terminal_rpm_revenue, discount_rate_rpm, years_to_revenue_rpm)
 
 # Calculate blended value for each business line
 blended_value_domestic = calculate_blended_value(present_value_domestic_ebitda, present_value_domestic_revenue)
@@ -72,5 +92,3 @@ st.write(f"Domestic Business Line Blended Value: ${blended_value_domestic:,.0f}"
 st.write(f"International Business Line Blended Value: ${blended_value_international:,.0f}")
 st.write(f"RPM Business Line Blended Value: ${blended_value_rpm:,.0f}")
 st.write(f"Total Business Value: ${total_business_value:,.0f}")
-
-
