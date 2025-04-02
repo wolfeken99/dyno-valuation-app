@@ -1,157 +1,92 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 
-# Function to calculate the present value (PV) using a given discount rate and years
-def calculate_present_value(value, discount_rate, years):
-    return value / ((1 + discount_rate) ** years)
+# Set up title and description
+st.title('Implied Business Value Model')
+st.write("This model calculates the implied value of a business with three business lines (Domestic, International, RPM), with **FDA approval** as a key input that affects the timeline for each business line. Revenue will start generating after the approval date with a certain lag.")
 
-# Function to calculate the business value using Revenue or EBITDA multiples
-def calculate_business_value(revenue_or_ebit, multiple):
-    return revenue_or_ebit * multiple
+# FDA Approval Date input
+fda_approval_date = st.date_input("FDA Approval Date", datetime(2026, 1, 1))
 
-# Streamlit App UI
-st.title("Dyno Valuation Model - Business Valuation")
+# Define revenue start delays for each business line (in months)
+revenue_delay_domestic = 6  # Domestic takes 6 months after FDA approval to start generating revenue
+revenue_delay_international = 12  # International takes 12 months
+revenue_delay_rpm = 18  # RPM takes 18 months
 
-# Inputs
-st.header("Inputs")
+# Discount rates sliders for each business line
+discount_rate_ebitda_domestic = st.slider("Discount Rate - Domestic (EBITDA)", min_value=0.0, max_value=1.0, value=0.60, step=0.01)
+discount_rate_revenue_domestic = st.slider("Discount Rate - Domestic (Revenue)", min_value=0.0, max_value=1.0, value=0.70, step=0.01)
 
-# FDA Approval Date
-approval_date = st.date_input("FDA Approval Date", datetime(2026, 1, 1))
-approval_date = pd.to_datetime(approval_date)
+discount_rate_ebitda_international = st.slider("Discount Rate - International (EBITDA)", min_value=0.0, max_value=1.0, value=0.60, step=0.01)
+discount_rate_revenue_international = st.slider("Discount Rate - International (Revenue)", min_value=0.0, max_value=1.0, value=0.70, step=0.01)
 
-# Lag time (Months) before revenue starts
-domestic_lag = st.slider("Lag time (months) for Domestic Hospital Revenue", 0, 24, 6)
-international_lag = st.slider("Lag time (months) for International Hospital Revenue", 0, 24, 12)
-rpm_lag = st.slider("Lag time (months) for RPM Revenue", 0, 24, 12)
+discount_rate_ebitda_rpm = st.slider("Discount Rate - RPM (EBITDA)", min_value=0.0, max_value=1.0, value=0.60, step=0.01)
+discount_rate_revenue_rpm = st.slider("Discount Rate - RPM (Revenue)", min_value=0.0, max_value=1.0, value=0.70, step=0.01)
 
-# Discount Rate for all business lines (same for both EBITDA and Revenue)
-discount_rate_domestic = st.slider("Discount Rate (Domestic Hospital)", 0.0, 1.0, 0.1)
-discount_rate_international = st.slider("Discount Rate (International Hospital)", 0.0, 1.0, 0.15)
-discount_rate_rpm = st.slider("Discount Rate (RPM)", 0.0, 1.0, 0.2)
+# Define the terminal NPV values for each business line
+terminal_ebitda_npv_domestic = st.number_input("Terminal (EBITDA) NPV - Domestic", value=1103854795062.0)
+terminal_revenue_npv_domestic = st.number_input("Terminal (Revenue) NPV - Domestic", value=74505280.0)
 
-# Multiples for EV (Enterprise Value), Revenue, and EBITDA
-revenue_multiple_domestic = st.number_input("Revenue Multiple (Domestic Hospital)", 0.0, 10.0, 5.0)
-ebit_multiple_domestic = st.number_input("EBITDA Multiple (Domestic Hospital)", 0.0, 10.0, 8.0)
+terminal_ebitda_npv_international = st.number_input("Terminal (EBITDA) NPV - International", value=857871799469.0)
+terminal_revenue_npv_international = st.number_input("Terminal (Revenue) NPV - International", value=537869567871.0)
 
-revenue_multiple_international = st.number_input("Revenue Multiple (International Hospital)", 0.0, 10.0, 5.0)
-ebit_multiple_international = st.number_input("EBITDA Multiple (International Hospital)", 0.0, 10.0, 8.0)
+terminal_ebitda_npv_rpm = st.number_input("Terminal (EBITDA) NPV - RPM", value=141333458229.0)
+terminal_revenue_npv_rpm = st.number_input("Terminal (Revenue) NPV - RPM", value=106762883868.0)
 
-revenue_multiple_rpm = st.number_input("Revenue Multiple (RPM)", 0.0, 10.0, 5.0)
-ebit_multiple_rpm = st.number_input("EBITDA Multiple (RPM)", 0.0, 10.0, 8.0)
+# Define a function to calculate the business line values based on assumptions and FDA approval
+def calculate_business_line_value(fda_approval_date, revenue_delay_months, discount_rate_ebitda, discount_rate_revenue, terminal_ebitda_npv, terminal_revenue_npv):
+    # Calculate the revenue start date based on FDA approval and the delay for each business line
+    revenue_start_date = fda_approval_date + timedelta(days=revenue_delay_months * 30)  # Assuming each month is approximately 30 days
+    today = datetime.today().date()
 
-# Actual revenue and EBITDA data for each business line
-st.header("Revenue & EBITDA Projections")
+    # Check if the business line has started generating revenue
+    if today >= revenue_start_date:
+        revenue_start = True
+    else:
+        revenue_start = False
 
-# Editable tables for each business line (Revenue and EBITDA)
-st.subheader("Domestic Hospital")
-domestic_revenue = {
-    "2025": st.number_input("Domestic Revenue 2025", min_value=0, value=0),
-    "2026": st.number_input("Domestic Revenue 2026", min_value=0, value=5248050),
-    "2027": st.number_input("Domestic Revenue 2027", min_value=0, value=20719845),
-    "2028": st.number_input("Domestic Revenue 2028", min_value=0, value=46512630),
-    "2029": st.number_input("Domestic Revenue 2029", min_value=0, value=94529575)
-}
+    # If the business line has started generating revenue, calculate the blended value
+    if revenue_start:
+        blended_value = (terminal_ebitda_npv * discount_rate_ebitda + terminal_revenue_npv * discount_rate_revenue) / (discount_rate_ebitda + discount_rate_revenue)
+    else:
+        blended_value = 0  # If revenue hasn't started yet, the value is 0
 
-domestic_ebitda = {
-    "2025": st.number_input("Domestic EBITDA 2025", min_value=0, value=-3804274),
-    "2026": st.number_input("Domestic EBITDA 2026", min_value=0, value=259896),
-    "2027": st.number_input("Domestic EBITDA 2027", min_value=0, value=10043270),
-    "2028": st.number_input("Domestic EBITDA 2028", min_value=0, value=25254228),
-    "2029": st.number_input("Domestic EBITDA 2029", min_value=0, value=55882649)
-}
+    return blended_value
 
-# International Revenue and EBITDA
-st.subheader("International Hospital")
-international_revenue = {
-    "2025": st.number_input("International Revenue 2025", min_value=0, value=0),
-    "2026": st.number_input("International Revenue 2026", min_value=0, value=0),
-    "2027": st.number_input("International Revenue 2027", min_value=0, value=14680170),
-    "2028": st.number_input("International Revenue 2028", min_value=0, value=64305788),
-    "2029": st.number_input("International Revenue 2029", min_value=0, value=140999280)
-}
+# Calculate the blended values for each business line based on the selected parameters
+blended_value_domestic = calculate_business_line_value(
+    fda_approval_date, revenue_delay_domestic, discount_rate_ebitda_domestic, discount_rate_revenue_domestic, terminal_ebitda_npv_domestic, terminal_revenue_npv_domestic
+)
 
-international_ebitda = {
-    "2025": st.number_input("International EBITDA 2025", min_value=0, value=-3494274),
-    "2026": st.number_input("International EBITDA 2026", min_value=0, value=-3781015),
-    "2027": st.number_input("International EBITDA 2027", min_value=0, value=5375248),
-    "2028": st.number_input("International EBITDA 2028", min_value=0, value=38243566),
-    "2029": st.number_input("International EBITDA 2029", min_value=0, value=89954378)
-}
+blended_value_international = calculate_business_line_value(
+    fda_approval_date, revenue_delay_international, discount_rate_ebitda_international, discount_rate_revenue_international, terminal_ebitda_npv_international, terminal_revenue_npv_international
+)
 
-# RPM Revenue and EBITDA
-st.subheader("RPM")
-rpm_revenue = {
-    "2025": st.number_input("RPM Revenue 2025", min_value=0, value=0),
-    "2026": st.number_input("RPM Revenue 2026", min_value=0, value=0),
-    "2027": st.number_input("RPM Revenue 2027", min_value=0, value=689227),
-    "2028": st.number_input("RPM Revenue 2028", min_value=0, value=14875721),
-    "2029": st.number_input("RPM Revenue 2029", min_value=0, value=37987006)
-}
+blended_value_rpm = calculate_business_line_value(
+    fda_approval_date, revenue_delay_rpm, discount_rate_ebitda_rpm, discount_rate_revenue_rpm, terminal_ebitda_npv_rpm, terminal_revenue_npv_rpm
+)
 
-rpm_ebitda = {
-    "2025": st.number_input("RPM EBITDA 2025", min_value=0, value=-1730000),
-    "2026": st.number_input("RPM EBITDA 2026", min_value=0, value=-3375000),
-    "2027": st.number_input("RPM EBITDA 2027", min_value=0, value=-1975933),
-    "2028": st.number_input("RPM EBITDA 2028", min_value=0, value=6261030),
-    "2029": st.number_input("RPM EBITDA 2029", min_value=0, value=20067330)
-}
+# Summing up the values from all business lines
+total_business_value = blended_value_domestic + blended_value_international + blended_value_rpm
 
-# Combine the data into dataframes for display
-domestic_df = pd.DataFrame({"Year": list(domestic_revenue.keys()), "Revenue": list(domestic_revenue.values()), "EBITDA": list(domestic_ebitda.values())})
-international_df = pd.DataFrame({"Year": list(international_revenue.keys()), "Revenue": list(international_revenue.values()), "EBITDA": list(international_ebitda.values())})
-rpm_df = pd.DataFrame({"Year": list(rpm_revenue.keys()), "Revenue": list(rpm_revenue.values()), "EBITDA": list(rpm_ebitda.values())})
+# Display the results
+st.write(f"### Blended Values for Each Business Line")
+st.write(f"Domestic Business Line: ${blended_value_domestic:,.0f}")
+st.write(f"International Business Line: ${blended_value_international:,.0f}")
+st.write(f"RPM Business Line: ${blended_value_rpm:,.0f}")
 
-# Display tables for each business line
-st.subheader("Domestic Hospital Projections")
-st.write(domestic_df)
+st.write(f"### Total Business Value: ${total_business_value:,.0f}")
 
-st.subheader("International Hospital Projections")
-st.write(international_df)
+# Additional outputs (e.g., IRR, MOIC, etc.)
+invested_amount = st.number_input("Invested Amount ($)", value=5000000)
 
-st.subheader("RPM Projections")
-st.write(rpm_df)
+# Calculate MOIC (Multiple on Invested Capital) for the total business value
+if invested_amount != 0:
+    moic = total_business_value / invested_amount
+else:
+    moic = "N/A"  # In case invested amount is zero
 
-# Calculate Present Value (PV) for each business line
-def calculate_pv_for_business(revenue, ebitda, discount_rate, years_to_revenue):
-    pv_revenue = {year: calculate_present_value(value, discount_rate, years_to_revenue) for year, value in revenue.items()}
-    pv_ebitda = {year: calculate_present_value(value, discount_rate, years_to_revenue) for year, value in ebitda.items()}
-    return pv_revenue, pv_ebitda
+st.write(f"### Investor Return (MOIC Calculation)")
+st.write(f"MOIC: {moic}")
 
-# Calculate the present value of revenue and EBITDA for each business line
-years_to_revenue_domestic = (datetime.now() - approval_date).days / 365 + (domestic_lag / 12)
-years_to_revenue_international = (datetime.now() - approval_date).days / 365 + (international_lag / 12)
-years_to_revenue_rpm = (datetime.now() - approval_date).days / 365 + (rpm_lag / 12)
-
-pv_domestic_revenue, pv_domestic_ebitda = calculate_pv_for_business(domestic_revenue, domestic_ebitda, discount_rate_domestic, years_to_revenue_domestic)
-pv_international_revenue, pv_international_ebitda = calculate_pv_for_business(international_revenue, international_ebitda, discount_rate_international, years_to_revenue_international)
-pv_rpm_revenue, pv_rpm_ebitda = calculate_pv_for_business(rpm_revenue, rpm_ebitda, discount_rate_rpm, years_to_revenue_rpm)
-
-# Output the results with proper formatting
-st.subheader("Calculated Present Values (PV)")
-
-# Display the results for Domestic, International, and RPM business lines
-st.write(f"Domestic Business PV Revenue: ${sum(pv_domestic_revenue.values()):,.0f}")
-st.write(f"Domestic Business PV EBITDA: ${sum(pv_domestic_ebitda.values()):,.0f}")
-
-st.write(f"International Business PV Revenue: ${sum(pv_international_revenue.values()):,.0f}")
-st.write(f"International Business PV EBITDA: ${sum(pv_international_ebitda.values()):,.0f}")
-
-st.write(f"RPM Business PV Revenue: ${sum(pv_rpm_revenue.values()):,.0f}")
-st.write(f"RPM Business PV EBITDA: ${sum(pv_rpm_ebitda.values()):,.0f}")
-
-# Calculate total value using multiples
-business_value_domestic_revenue = calculate_business_value(sum(pv_domestic_revenue.values()), revenue_multiple_domestic)
-business_value_domestic_ebitda = calculate_business_value(sum(pv_domestic_ebitda.values()), ebit_multiple_domestic)
-
-business_value_international_revenue = calculate_business_value(sum(pv_international_revenue.values()), revenue_multiple_international)
-business_value_international_ebitda = calculate_business_value(sum(pv_international_ebitda.values()), ebit_multiple_international)
-
-business_value_rpm_revenue = calculate_business_value(sum(pv_rpm_revenue.values()), revenue_multiple_rpm)
-business_value_rpm_ebitda = calculate_business_value(sum(pv_rpm_ebitda.values()), ebit_multiple_rpm)
-
-# Calculate the total business value
-total_business_value = business_value_domestic_revenue + business_value_domestic_ebitda + business_value_international_revenue + business_value_international_ebitda + business_value_rpm_revenue + business_value_rpm_ebitda
-
-# Output the total business value
-st.write(f"Total Business Value: ${total_business_value:,.0f}")
