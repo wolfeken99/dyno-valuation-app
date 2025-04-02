@@ -1,62 +1,37 @@
 import streamlit as st
 import pandas as pd
 
-# Example values for Exit Proceeds and Invested Amount
-exit_proceeds = 5000000  # Example exit proceeds
-invested_amount = 2000000  # Example invested amount
+# Define a function to calculate the business line values based on assumptions
+def calculate_business_line_value(discount_rate_ebitda, discount_rate_revenue, terminal_ebitda_npv, terminal_revenue_npv):
+    # Calculate blended value (could be an average or weighted average depending on the assumptions)
+    blended_value = (terminal_ebitda_npv * discount_rate_ebitda + terminal_revenue_npv * discount_rate_revenue) / (discount_rate_ebitda + discount_rate_revenue)
+    return blended_value
 
-# Ensure we don't divide by zero
-if invested_amount != 0:
-    moic = exit_proceeds / invested_amount
-else:
-    moic = "N/A"  # In case invested amount is zero
+# Set up title and description
+st.title('Implied Business Value Model')
+st.write("This model calculates the implied value of a business with three business lines (Domestic, International, RPM).")
 
-# Segment selection using radio buttons
-segment = st.radio(
-    "Select the segment to view the valuation:",
-    ('Domestic', 'International', 'RPM')
-)
+# FDA Approval dropdown for each business line
+fda_approval_domestic = st.selectbox("FDA Approval - Domestic Business Line", ["Not Approved", "Approved"])
+fda_approval_international = st.selectbox("FDA Approval - International Business Line", ["Not Approved", "Approved"])
+fda_approval_rpm = st.selectbox("FDA Approval - RPM Business Line", ["Not Approved", "Approved"])
 
-# Add discount rate sliders for assumptions
-discount_rate_ebitda = st.slider(
-    "Discount Rate - EBITDA", min_value=0.0, max_value=1.0, value=0.60, step=0.01
-)
-discount_rate_revenue = st.slider(
-    "Discount Rate - Revenue", min_value=0.0, max_value=1.0, value=0.70, step=0.01
-)
+# Discount rates sliders for each business line
+discount_rate_ebitda_domestic = st.slider("Discount Rate - Domestic (EBITDA)", min_value=0.0, max_value=1.0, value=0.60, step=0.01)
+discount_rate_revenue_domestic = st.slider("Discount Rate - Domestic (Revenue)", min_value=0.0, max_value=1.0, value=0.70, step=0.01)
 
-# Example data frame for terminal values, EBITDA, revenue, etc.
-valuation_results = {
-    'Segment': ['Domestic', 'International', 'RPM'],
-    'Terminal (EBITDA) NPV': [110385479.5062, 85787179.9469, 14133345.8229],
-    'Terminal (Revenue) NPV': [74505280, 53786956.7871, 10676288.3868],
-    'Blended Value': [92453739.7531, 69787068.367, 12404817.1048]
-}
+discount_rate_ebitda_international = st.slider("Discount Rate - International (EBITDA)", min_value=0.0, max_value=1.0, value=0.60, step=0.01)
+discount_rate_revenue_international = st.slider("Discount Rate - International (Revenue)", min_value=0.0, max_value=1.0, value=0.70, step=0.01)
 
-# Creating a DataFrame for the valuation results
-valuation_df = pd.DataFrame(valuation_results)
+discount_rate_ebitda_rpm = st.slider("Discount Rate - RPM (EBITDA)", min_value=0.0, max_value=1.0, value=0.60, step=0.01)
+discount_rate_revenue_rpm = st.slider("Discount Rate - RPM (Revenue)", min_value=0.0, max_value=1.0, value=0.70, step=0.01)
 
-# Filter data based on selected segment
-selected_segment_data = valuation_df[valuation_df['Segment'] == segment]
+# Define the terminal NPV values for each business line
+terminal_ebitda_npv_domestic = st.number_input("Terminal (EBITDA) NPV - Domestic", value=110385479.5062)
+terminal_revenue_npv_domestic = st.number_input("Terminal (Revenue) NPV - Domestic", value=74505280)
 
-# Display the valuation results for the selected segment
-st.write(f"Valuation Results for {segment} segment")
-st.dataframe(selected_segment_data)
+terminal_ebitda_npv_international = st.number_input("Terminal (EBITDA) NPV - International", value=85787179.9469)
+terminal_revenue_npv_international = st.number_input("Terminal (Revenue) NPV - International", value=53786956.7871)
 
-# Investor return calculations
-total_pre_money = selected_segment_data['Blended Value'].sum()
-post_money = total_pre_money + 5000000  # Example additional value for post-money valuation
-ownership_pct = 5000000 / post_money  # Example ownership percentage
-exit_value = selected_segment_data['Blended Value'].sum()
-exit_proceeds = exit_value * ownership_pct
+terminal_ebitda_npv_rpm = st.number_input
 
-# Displaying investor return section
-st.subheader(f"Investor Return for {segment} Segment ($5M Entry)")
-st.markdown(f"**Pre-Money Valuation:** ${total_pre_money:,.2f}")
-st.markdown(f"**Ownership %:** {ownership_pct*100:.2f}%")
-st.markdown(f"**Exit Proceeds:** ${exit_proceeds:,.2f}")
-st.markdown(f"**MOIC:** {moic}")
-
-# Displaying IRR calculation if applicable
-irr = (exit_proceeds / invested_amount) ** (1 / 5) - 1
-st.markdown(f"**IRR:** {irr*100:.1f}%")
