@@ -1,8 +1,7 @@
- 
-import streamlit as st
+  import streamlit as st
 import pandas as pd
 
-# Input values for your business model (adjust as needed)
+# Example values for Exit Proceeds and Invested Amount
 exit_proceeds = 5000000  # Example exit proceeds
 invested_amount = 2000000  # Example invested amount
 
@@ -11,6 +10,12 @@ if invested_amount != 0:
     moic = exit_proceeds / invested_amount
 else:
     moic = "N/A"  # In case invested amount is zero
+
+# Segment selection using radio buttons
+segment = st.radio(
+    "Select the segment to view the valuation:",
+    ('Domestic', 'International', 'RPM')
+)
 
 # Example data frame for terminal values, EBITDA, revenue, etc.
 valuation_results = {
@@ -23,19 +28,22 @@ valuation_results = {
 # Creating a DataFrame for the valuation results
 valuation_df = pd.DataFrame(valuation_results)
 
-# Display the valuation results in a table
-st.write("Valuation Results")
-st.dataframe(valuation_df)
+# Filter data based on selected segment
+selected_segment_data = valuation_df[valuation_df['Segment'] == segment]
+
+# Display the valuation results for the selected segment
+st.write(f"Valuation Results for {segment} segment")
+st.dataframe(selected_segment_data)
 
 # Investor return calculations
-total_pre_money = valuation_df['Blended Value'].sum()
+total_pre_money = selected_segment_data['Blended Value'].sum()
 post_money = total_pre_money + 5000000  # Example additional value for post-money valuation
 ownership_pct = 5000000 / post_money  # Example ownership percentage
-exit_value = valuation_df['Blended Value'].sum()
+exit_value = selected_segment_data['Blended Value'].sum()
 exit_proceeds = exit_value * ownership_pct
 
-# Display investor return section
-st.subheader("Investor Return ($5M Entry)")
+# Displaying investor return section
+st.subheader(f"Investor Return for {segment} Segment ($5M Entry)")
 st.markdown(f"**Pre-Money Valuation:** ${total_pre_money:,.2f}")
 st.markdown(f"**Ownership %:** {ownership_pct*100:.2f}%")
 st.markdown(f"**Exit Proceeds:** ${exit_proceeds:,.2f}")
