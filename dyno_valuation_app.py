@@ -1,4 +1,4 @@
-  import streamlit as st
+import streamlit as st
 import pandas as pd
 
 # Example values for Exit Proceeds and Invested Amount
@@ -52,3 +52,4 @@ st.markdown(f"**MOIC:** {moic}")
 # Displaying IRR calculation if applicable
 irr = (exit_proceeds / invested_amount) ** (1 / 5) - 1
 st.markdown(f"**IRR:** {irr*100:.1f}%")
+
