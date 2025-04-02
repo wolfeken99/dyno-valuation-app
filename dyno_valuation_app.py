@@ -17,6 +17,14 @@ segment = st.radio(
     ('Domestic', 'International', 'RPM')
 )
 
+# Add discount rate sliders for assumptions
+discount_rate_ebitda = st.slider(
+    "Discount Rate - EBITDA", min_value=0.0, max_value=1.0, value=0.60, step=0.01
+)
+discount_rate_revenue = st.slider(
+    "Discount Rate - Revenue", min_value=0.0, max_value=1.0, value=0.70, step=0.01
+)
+
 # Example data frame for terminal values, EBITDA, revenue, etc.
 valuation_results = {
     'Segment': ['Domestic', 'International', 'RPM'],
@@ -52,4 +60,3 @@ st.markdown(f"**MOIC:** {moic}")
 # Displaying IRR calculation if applicable
 irr = (exit_proceeds / invested_amount) ** (1 / 5) - 1
 st.markdown(f"**IRR:** {irr*100:.1f}%")
-
