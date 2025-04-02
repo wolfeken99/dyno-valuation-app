@@ -1,4 +1,4 @@
-import streamlit as st
+ import streamlit as st
 import pandas as pd
 import numpy as np
 from datetime import datetime
@@ -20,6 +20,9 @@ st.header("Inputs")
 # FDA Approval Date
 approval_date = st.date_input("FDA Approval Date", datetime(2025, 12, 31))
 
+# Ensure the FDA approval date is in datetime format
+approval_date = pd.to_datetime(approval_date)
+
 # Lag time (Months) before revenue starts
 domestic_lag = st.slider("Lag time (months) for Domestic Hospital Revenue", 0, 24, 6)
 international_lag = st.slider("Lag time (months) for International Hospital Revenue", 0, 24, 12)
@@ -39,6 +42,7 @@ npv_terminal_rpm_ebitda = 141333458229.00
 npv_terminal_rpm_revenue = 106762883868.00
 
 # Calculate Present Value for each business line
+# Ensure correct handling of months-to-years conversion
 years_to_revenue_domestic = (datetime.now() - approval_date).days / 365 + (domestic_lag / 12)
 years_to_revenue_international = (datetime.now() - approval_date).days / 365 + (international_lag / 12)
 years_to_revenue_rpm = (datetime.now() - approval_date).days / 365 + (rpm_lag / 12)
@@ -68,4 +72,5 @@ st.write(f"Domestic Business Line Blended Value: ${blended_value_domestic:,.0f}"
 st.write(f"International Business Line Blended Value: ${blended_value_international:,.0f}")
 st.write(f"RPM Business Line Blended Value: ${blended_value_rpm:,.0f}")
 st.write(f"Total Business Value: ${total_business_value:,.0f}")
+
 
