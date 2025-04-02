@@ -1,6 +1,5 @@
-import streamlit as st
+ import streamlit as st
 import pandas as pd
-import numpy as np
 from datetime import datetime, timedelta
 
 # Set up title and description
@@ -11,7 +10,6 @@ st.write("This model calculates the implied value of a business with three busin
 fda_approval_date = st.date_input("FDA Approval Date", datetime(2026, 1, 1))
 
 # Define revenue start delays for each business line (in months)
-# Assuming different delays for each business line
 revenue_delay_domestic = 6  # Domestic takes 6 months after FDA approval to start generating revenue
 revenue_delay_international = 12  # International takes 12 months
 revenue_delay_rpm = 18  # RPM takes 18 months
@@ -79,4 +77,16 @@ st.write(f"International Business Line: ${blended_value_international:,.0f}")
 st.write(f"RPM Business Line: ${blended_value_rpm:,.0f}")
 
 st.write(f"### Total Business Value: ${total_business_value:,.0f}")
+
+# Additional outputs (e.g., IRR, MOIC, etc.)
+invested_amount = st.number_input("Invested Amount ($)", value=5000000)
+
+# Calculate MOIC (Multiple on Invested Capital) for the total business value
+if invested_amount != 0:
+    moic = total_business_value / invested_amount
+else:
+    moic = "N/A"  # In case invested amount is zero
+
+st.write(f"### Investor Return (MOIC Calculation)")
+st.write(f"MOIC: {moic}")
 
