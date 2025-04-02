@@ -2,11 +2,11 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 
-# Function to calculate the present value (PV) using a given multiple and discount rate
-def calculate_present_value(npv, discount_rate, years):
-    return npv / ((1 + discount_rate) ** years)
+# Function to calculate the present value (PV) using a given discount rate and years
+def calculate_present_value(value, discount_rate, years):
+    return value / ((1 + discount_rate) ** years)
 
-# Function to calculate the business value using Revenue or EBIT multiples
+# Function to calculate the business value using Revenue or EBITDA multiples
 def calculate_business_value(revenue_or_ebit, multiple):
     return revenue_or_ebit * multiple
 
