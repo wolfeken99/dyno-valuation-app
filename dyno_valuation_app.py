@@ -43,94 +43,115 @@ ebit_multiple_rpm = st.number_input("EBITDA Multiple (RPM)", 0.0, 10.0, 8.0)
 # Actual revenue and EBITDA data for each business line
 st.header("Revenue & EBITDA Projections")
 
-# Domestic Revenue and EBITDA (provided)
+# Editable tables for each business line (Revenue and EBITDA)
+st.subheader("Domestic Hospital")
 domestic_revenue = {
-    "2025": 0,
-    "2026": 5248050,
-    "2027": 20719845,
-    "2028": 46512630,
-    "2029": 94529575
+    "2025": st.number_input("Domestic Revenue 2025", min_value=0, value=0),
+    "2026": st.number_input("Domestic Revenue 2026", min_value=0, value=5248050),
+    "2027": st.number_input("Domestic Revenue 2027", min_value=0, value=20719845),
+    "2028": st.number_input("Domestic Revenue 2028", min_value=0, value=46512630),
+    "2029": st.number_input("Domestic Revenue 2029", min_value=0, value=94529575)
 }
 
 domestic_ebitda = {
-    "2025": -3804274,
-    "2026": 259896,
-    "2027": 10043270,
-    "2028": 25254228,
-    "2029": 55882649
+    "2025": st.number_input("Domestic EBITDA 2025", min_value=0, value=-3804274),
+    "2026": st.number_input("Domestic EBITDA 2026", min_value=0, value=259896),
+    "2027": st.number_input("Domestic EBITDA 2027", min_value=0, value=10043270),
+    "2028": st.number_input("Domestic EBITDA 2028", min_value=0, value=25254228),
+    "2029": st.number_input("Domestic EBITDA 2029", min_value=0, value=55882649)
 }
 
-# International Revenue and EBITDA (provided)
+# International Revenue and EBITDA
+st.subheader("International Hospital")
 international_revenue = {
-    "2025": 0,
-    "2026": 0,
-    "2027": 14680170,
-    "2028": 64305788,
-    "2029": 140999280
+    "2025": st.number_input("International Revenue 2025", min_value=0, value=0),
+    "2026": st.number_input("International Revenue 2026", min_value=0, value=0),
+    "2027": st.number_input("International Revenue 2027", min_value=0, value=14680170),
+    "2028": st.number_input("International Revenue 2028", min_value=0, value=64305788),
+    "2029": st.number_input("International Revenue 2029", min_value=0, value=140999280)
 }
 
 international_ebitda = {
-    "2025": -3494274,
-    "2026": -3781015,
-    "2027": 5375248,
-    "2028": 38243566,
-    "2029": 89954378
+    "2025": st.number_input("International EBITDA 2025", min_value=0, value=-3494274),
+    "2026": st.number_input("International EBITDA 2026", min_value=0, value=-3781015),
+    "2027": st.number_input("International EBITDA 2027", min_value=0, value=5375248),
+    "2028": st.number_input("International EBITDA 2028", min_value=0, value=38243566),
+    "2029": st.number_input("International EBITDA 2029", min_value=0, value=89954378)
 }
 
-# RPM Revenue and EBITDA (provided)
+# RPM Revenue and EBITDA
+st.subheader("RPM")
 rpm_revenue = {
-    "2025": 0,
-    "2026": 0,
-    "2027": 689227,
-    "2028": 14875721,
-    "2029": 37987006
+    "2025": st.number_input("RPM Revenue 2025", min_value=0, value=0),
+    "2026": st.number_input("RPM Revenue 2026", min_value=0, value=0),
+    "2027": st.number_input("RPM Revenue 2027", min_value=0, value=689227),
+    "2028": st.number_input("RPM Revenue 2028", min_value=0, value=14875721),
+    "2029": st.number_input("RPM Revenue 2029", min_value=0, value=37987006)
 }
 
 rpm_ebitda = {
-    "2025": -1730000,
-    "2026": -3375000,
-    "2027": -1975933,
-    "2028": 6261030,
-    "2029": 20067330
+    "2025": st.number_input("RPM EBITDA 2025", min_value=0, value=-1730000),
+    "2026": st.number_input("RPM EBITDA 2026", min_value=0, value=-3375000),
+    "2027": st.number_input("RPM EBITDA 2027", min_value=0, value=-1975933),
+    "2028": st.number_input("RPM EBITDA 2028", min_value=0, value=6261030),
+    "2029": st.number_input("RPM EBITDA 2029", min_value=0, value=20067330)
 }
 
-# Calculate NPVs for each business line
+# Combine the data into dataframes for display
+domestic_df = pd.DataFrame({"Year": list(domestic_revenue.keys()), "Revenue": list(domestic_revenue.values()), "EBITDA": list(domestic_ebitda.values())})
+international_df = pd.DataFrame({"Year": list(international_revenue.keys()), "Revenue": list(international_revenue.values()), "EBITDA": list(international_ebitda.values())})
+rpm_df = pd.DataFrame({"Year": list(rpm_revenue.keys()), "Revenue": list(rpm_revenue.values()), "EBITDA": list(rpm_ebitda.values())})
 
-# Calculate NPVs for each business line
+# Display tables for each business line
+st.subheader("Domestic Hospital Projections")
+st.write(domestic_df)
+
+st.subheader("International Hospital Projections")
+st.write(international_df)
+
+st.subheader("RPM Projections")
+st.write(rpm_df)
+
+# Calculate Present Value (PV) for each business line
+def calculate_pv_for_business(revenue, ebitda, discount_rate, years_to_revenue):
+    pv_revenue = {year: calculate_present_value(value, discount_rate, years_to_revenue) for year, value in revenue.items()}
+    pv_ebitda = {year: calculate_present_value(value, discount_rate, years_to_revenue) for year, value in ebitda.items()}
+    return pv_revenue, pv_ebitda
+
+# Calculate the present value of revenue and EBITDA for each business line
 years_to_revenue_domestic = (datetime.now() - approval_date).days / 365 + (domestic_lag / 12)
 years_to_revenue_international = (datetime.now() - approval_date).days / 365 + (international_lag / 12)
 years_to_revenue_rpm = (datetime.now() - approval_date).days / 365 + (rpm_lag / 12)
 
-# Present value calculations for the years 2026 to 2029
-present_value_domestic_revenue = {year: calculate_present_value(value, discount_rate_domestic, years_to_revenue_domestic) for year, value in domestic_revenue.items()}
-present_value_international_revenue = {year: calculate_present_value(value, discount_rate_international, years_to_revenue_international) for year, value in international_revenue.items()}
-present_value_rpm_revenue = {year: calculate_present_value(value, discount_rate_rpm, years_to_revenue_rpm) for year, value in rpm_revenue.items()}
+pv_domestic_revenue, pv_domestic_ebitda = calculate_pv_for_business(domestic_revenue, domestic_ebitda, discount_rate_domestic, years_to_revenue_domestic)
+pv_international_revenue, pv_international_ebitda = calculate_pv_for_business(international_revenue, international_ebitda, discount_rate_international, years_to_revenue_international)
+pv_rpm_revenue, pv_rpm_ebitda = calculate_pv_for_business(rpm_revenue, rpm_ebitda, discount_rate_rpm, years_to_revenue_rpm)
 
-# EBITDA Present value calculations
-present_value_domestic_ebitda = {year: calculate_present_value(value, discount_rate_domestic, years_to_revenue_domestic) for year, value in domestic_ebitda.items()}
-present_value_international_ebitda = {year: calculate_present_value(value, discount_rate_international, years_to_revenue_international) for year, value in international_ebitda.items()}
-present_value_rpm_ebitda = {year: calculate_present_value(value, discount_rate_rpm, years_to_revenue_rpm) for year, value in rpm_ebitda.items()}
+# Output the results with proper formatting
+st.subheader("Calculated Present Values (PV)")
 
-# Calculate the business value for each business using multiples (Revenue or EBITDA)
-business_value_domestic_revenue = calculate_business_value(sum(present_value_domestic_revenue.values()), revenue_multiple_domestic)
-business_value_domestic_ebitda = calculate_business_value(sum(present_value_domestic_ebitda.values()), ebit_multiple_domestic)
+# Display the results for Domestic, International, and RPM business lines
+st.write(f"Domestic Business PV Revenue: ${sum(pv_domestic_revenue.values()):,.0f}")
+st.write(f"Domestic Business PV EBITDA: ${sum(pv_domestic_ebitda.values()):,.0f}")
 
-business_value_international_revenue = calculate_business_value(sum(present_value_international_revenue.values()), revenue_multiple_international)
-business_value_international_ebitda = calculate_business_value(sum(present_value_international_ebitda.values()), ebit_multiple_international)
+st.write(f"International Business PV Revenue: ${sum(pv_international_revenue.values()):,.0f}")
+st.write(f"International Business PV EBITDA: ${sum(pv_international_ebitda.values()):,.0f}")
 
-business_value_rpm_revenue = calculate_business_value(sum(present_value_rpm_revenue.values()), revenue_multiple_rpm)
-business_value_rpm_ebitda = calculate_business_value(sum(present_value_rpm_ebitda.values()), ebit_multiple_rpm)
+st.write(f"RPM Business PV Revenue: ${sum(pv_rpm_revenue.values()):,.0f}")
+st.write(f"RPM Business PV EBITDA: ${sum(pv_rpm_ebitda.values()):,.0f}")
+
+# Calculate total value using multiples
+business_value_domestic_revenue = calculate_business_value(sum(pv_domestic_revenue.values()), revenue_multiple_domestic)
+business_value_domestic_ebitda = calculate_business_value(sum(pv_domestic_ebitda.values()), ebit_multiple_domestic)
+
+business_value_international_revenue = calculate_business_value(sum(pv_international_revenue.values()), revenue_multiple_international)
+business_value_international_ebitda = calculate_business_value(sum(pv_international_ebitda.values()), ebit_multiple_international)
+
+business_value_rpm_revenue = calculate_business_value(sum(pv_rpm_revenue.values()), revenue_multiple_rpm)
+business_value_rpm_ebitda = calculate_business_value(sum(pv_rpm_ebitda.values()), ebit_multiple_rpm)
 
 # Calculate the total business value
 total_business_value = business_value_domestic_revenue + business_value_domestic_ebitda + business_value_international_revenue + business_value_international_ebitda + business_value_rpm_revenue + business_value_rpm_ebitda
 
-# Outputs
-st.header("Outputs")
-st.write(f"Domestic Business Line Revenue Based Value: ${business_value_domestic_revenue:,.0f}")
-st.write(f"Domestic Business Line EBITDA Based Value: ${business_value_domestic_ebitda:,.0f}")
-st.write(f"International Business Line Revenue Based Value: ${business_value_international_revenue:,.0f}")
-st.write(f"International Business Line EBITDA Based Value: ${business_value_international_ebitda:,.0f}")
-st.write(f"RPM Business Line Revenue Based Value: ${business_value_rpm_revenue:,.0f}")
-st.write(f"RPM Business Line EBITDA Based Value: ${business_value_rpm_ebitda:,.0f}")
+# Output the total business value
 st.write(f"Total Business Value: ${total_business_value:,.0f}")
-
