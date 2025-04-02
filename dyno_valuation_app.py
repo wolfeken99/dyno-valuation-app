@@ -93,4 +93,3 @@ else:
 
 st.write(f"### Investor Return (MOIC Calculation)")
 st.write(f"MOIC: {moic}")
-
