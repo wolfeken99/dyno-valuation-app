@@ -1,15 +1,14 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
 from datetime import datetime
 
-# Function to calculate the present value of terminal EBITDA and revenue NPV
+# Function to calculate the present value (PV) using a given multiple and discount rate
 def calculate_present_value(npv, discount_rate, years):
     return npv / ((1 + discount_rate) ** years)
 
-# Function to calculate the blended value
-def calculate_blended_value(ebitda_value, revenue_value, weight=0.5):
-    return (ebitda_value * weight) + (revenue_value * (1 - weight))
+# Function to calculate the business value using Revenue or EBIT multiples
+def calculate_business_value(revenue_or_ebit, multiple):
+    return revenue_or_ebit * multiple
 
 # Streamlit App UI
 st.title("Dyno Valuation Model - Business Valuation")
@@ -19,8 +18,6 @@ st.header("Inputs")
 
 # FDA Approval Date
 approval_date = st.date_input("FDA Approval Date", datetime(2026, 1, 1))
-
-# Ensure the FDA approval date is in datetime format
 approval_date = pd.to_datetime(approval_date)
 
 # Lag time (Months) before revenue starts
@@ -32,6 +29,16 @@ rpm_lag = st.slider("Lag time (months) for RPM Revenue", 0, 24, 12)
 discount_rate_domestic = st.slider("Discount Rate (Domestic Hospital)", 0.0, 1.0, 0.1)
 discount_rate_international = st.slider("Discount Rate (International Hospital)", 0.0, 1.0, 0.15)
 discount_rate_rpm = st.slider("Discount Rate (RPM)", 0.0, 1.0, 0.2)
+
+# Multiples for EV (Enterprise Value), Revenue, and EBITDA
+revenue_multiple_domestic = st.number_input("Revenue Multiple (Domestic Hospital)", 0.0, 10.0, 5.0)
+ebit_multiple_domestic = st.number_input("EBITDA Multiple (Domestic Hospital)", 0.0, 10.0, 8.0)
+
+revenue_multiple_international = st.number_input("Revenue Multiple (International Hospital)", 0.0, 10.0, 5.0)
+ebit_multiple_international = st.number_input("EBITDA Multiple (International Hospital)", 0.0, 10.0, 8.0)
+
+revenue_multiple_rpm = st.number_input("Revenue Multiple (RPM)", 0.0, 10.0, 5.0)
+ebit_multiple_rpm = st.number_input("EBITDA Multiple (RPM)", 0.0, 10.0, 8.0)
 
 # Actual revenue and EBITDA data for each business line
 st.header("Revenue & EBITDA Projections")
@@ -87,23 +94,7 @@ rpm_ebitda = {
     "2029": 20067330
 }
 
-# Display editable tables for inputting data for each business line
-st.subheader("Domestic Hospital")
-domestic_df = pd.DataFrame(domestic_revenue.items(), columns=["Year", "Revenue"])
-domestic_df["EBITDA"] = domestic_df["Year"].map(domestic_ebitda)
-st.write(domestic_df)
-
-st.subheader("International Hospital")
-international_df = pd.DataFrame(international_revenue.items(), columns=["Year", "Revenue"])
-international_df["EBITDA"] = international_df["Year"].map(international_ebitda)
-st.write(international_df)
-
-st.subheader("RPM")
-rpm_df = pd.DataFrame(rpm_revenue.items(), columns=["Year", "Revenue"])
-rpm_df["EBITDA"] = rpm_df["Year"].map(rpm_ebitda)
-st.write(rpm_df)
-
-# Now, calculate the present value for each business line
+# Calculate NPVs for each business line
 
 # Calculate NPVs for each business line
 years_to_revenue_domestic = (datetime.now() - approval_date).days / 365 + (domestic_lag / 12)
@@ -120,18 +111,26 @@ present_value_domestic_ebitda = {year: calculate_present_value(value, discount_r
 present_value_international_ebitda = {year: calculate_present_value(value, discount_rate_international, years_to_revenue_international) for year, value in international_ebitda.items()}
 present_value_rpm_ebitda = {year: calculate_present_value(value, discount_rate_rpm, years_to_revenue_rpm) for year, value in rpm_ebitda.items()}
 
-# Calculate the total blended value for each business
-blended_value_domestic = calculate_blended_value(sum(present_value_domestic_ebitda.values()), sum(present_value_domestic_revenue.values()))
-blended_value_international = calculate_blended_value(sum(present_value_international_ebitda.values()), sum(present_value_international_revenue.values()))
-blended_value_rpm = calculate_blended_value(sum(present_value_rpm_ebitda.values()), sum(present_value_rpm_revenue.values()))
+# Calculate the business value for each business using multiples (Revenue or EBITDA)
+business_value_domestic_revenue = calculate_business_value(sum(present_value_domestic_revenue.values()), revenue_multiple_domestic)
+business_value_domestic_ebitda = calculate_business_value(sum(present_value_domestic_ebitda.values()), ebit_multiple_domestic)
 
-# Total business value
-total_business_value = blended_value_domestic + blended_value_international + blended_value_rpm
+business_value_international_revenue = calculate_business_value(sum(present_value_international_revenue.values()), revenue_multiple_international)
+business_value_international_ebitda = calculate_business_value(sum(present_value_international_ebitda.values()), ebit_multiple_international)
+
+business_value_rpm_revenue = calculate_business_value(sum(present_value_rpm_revenue.values()), revenue_multiple_rpm)
+business_value_rpm_ebitda = calculate_business_value(sum(present_value_rpm_ebitda.values()), ebit_multiple_rpm)
+
+# Calculate the total business value
+total_business_value = business_value_domestic_revenue + business_value_domestic_ebitda + business_value_international_revenue + business_value_international_ebitda + business_value_rpm_revenue + business_value_rpm_ebitda
 
 # Outputs
 st.header("Outputs")
-st.write(f"Domestic Business Line Blended Value: ${blended_value_domestic:,.0f}")
-st.write(f"International Business Line Blended Value: ${blended_value_international:,.0f}")
-st.write(f"RPM Business Line Blended Value: ${blended_value_rpm:,.0f}")
+st.write(f"Domestic Business Line Revenue Based Value: ${business_value_domestic_revenue:,.0f}")
+st.write(f"Domestic Business Line EBITDA Based Value: ${business_value_domestic_ebitda:,.0f}")
+st.write(f"International Business Line Revenue Based Value: ${business_value_international_revenue:,.0f}")
+st.write(f"International Business Line EBITDA Based Value: ${business_value_international_ebitda:,.0f}")
+st.write(f"RPM Business Line Revenue Based Value: ${business_value_rpm_revenue:,.0f}")
+st.write(f"RPM Business Line EBITDA Based Value: ${business_value_rpm_ebitda:,.0f}")
 st.write(f"Total Business Value: ${total_business_value:,.0f}")
 
